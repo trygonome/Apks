@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Budget Voice</string>
+    <string name="notification_channel_name">Budget Reminders</string>
+    <string name="notification_channel_description">Rappels pour enregistrer vos dépenses</string>
+    <string name="notification_title">N\'oublie pas tes dépenses !</string>
+    <string name="notification_content">Prends 30 secondes pour enregistrer tes dépenses du jour 💰</string>
+</resources>
