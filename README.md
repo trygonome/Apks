@@ -58,7 +58,10 @@ au moment du scan) — le pipeline PC fait foi pour la structuration définitive
 
 ## Compilation
 
-L'APK de debug est construit automatiquement par GitHub Actions à chaque push
+**Téléchargement direct de la dernière version** :
+https://github.com/trygonome/Apks/raw/main/apk/scan-tickets.apk
+
+L'APK de debug est aussi construit automatiquement par GitHub Actions à chaque push
 (artefact `scan-tickets-debug`). En local :
 
 ```bash

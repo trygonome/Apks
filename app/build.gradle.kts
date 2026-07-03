@@ -12,8 +12,8 @@ android {
         applicationId = "com.scantickets.app"
         minSdk = 26
         targetSdk = 35
-        versionCode = 2
-        versionName = "1.1"
+        versionCode = 3
+        versionName = "1.2"
     }
 
     buildTypes {
@@ -71,4 +71,7 @@ dependencies {
 
     // Miniatures des tickets
     implementation("io.coil-kt:coil-compose:2.7.0")
+
+    // Tests unitaires (parseur de tickets)
+    testImplementation("junit:junit:4.13.2")
 }
