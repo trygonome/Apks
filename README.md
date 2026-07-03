@@ -1,121 +1,61 @@
-# Budget Voice 💰🎤
+# Scan Tickets 🧾📱
 
-Une application Android de gestion de budget personnalisée qui rend la saisie de dépenses **ultra-rapide** grâce à la reconnaissance vocale et l'OCR.
+Application Android qui sert de **porte d'entrée** au système local d'analyse de tickets de caisse
+(décrit dans le plan d'action « Scanner de tickets de caisse » — pipeline PC avec OCR, LLM local et SQLite).
 
-## 🎯 Concept
+## Rôle de l'app
 
-Budget Voice résout le problème principal des apps de budget traditionnelles : **la friction de saisie**. Plus besoin de passer du temps à noter chaque dépense manuellement !
+Le téléphone fait **une seule chose, bien** : capturer des tickets exploitables et les mettre
+à disposition du PC.
 
-## ✨ Fonctionnalités
+1. **Scan** — recadrage, redressement de perspective et nettoyage automatiques
+   (API ML Kit Document Scanner, hors ligne).
+2. **OCR local** — le texte brut est extrait sur le téléphone (ML Kit Text Recognition,
+   modèle embarqué, 100 % hors ligne). L'app affiche immédiatement le total et la date
+   détectés : si rien n'est lu, on rescanne sur place.
+3. **Dépôt** — chaque scan est enregistré dans un dossier choisi par l'utilisateur :
+   - `ticket_<horodatage>.jpg` — la photo recadrée ;
+   - `ticket_<horodatage>.json` — texte OCR + total/date/magasin détectés.
 
-### 🎤 Saisie Vocale Ultra-Rapide
-- Dites simplement "15 euros café" ou "50 euros courses"
-- L'app détecte automatiquement le montant et la catégorie
-- Enregistrement instantané en quelques secondes
+Ce dossier est ensuite synchronisé vers le PC (Syncthing recommandé, ou transfert par câble).
+La **structuration fine** (articles, prix, catégories) reste au PC : c'est le rôle du LLM local
+(Qwen via llama.cpp) du plan d'action.
 
-### 📸 Scan de Tickets (OCR)
-- Prenez une photo de votre ticket de caisse
-- L'OCR détecte automatiquement le montant total
-- Validation rapide en un clic
+## Format du fichier JSON
 
-### ⚡ Saisie Manuelle Rapide
-- Fallback simple si nécessaire
-- Interface minimaliste et intuitive
+```json
+{
+  "fichier_image": "ticket_2026-07-03_141530.jpg",
+  "scanne_le": "2026-07-03_141530",
+  "total": "23.47",
+  "date_ticket": "03/07/2026",
+  "magasin": "CARREFOUR",
+  "texte_ocr": "… texte brut complet du ticket …"
+}
+```
 
-### 🔔 Notifications Intelligentes
-- Rappels personnalisés pour ne rien oublier
-- Notifications à 18h (retour du boulot) et 22h (soirée)
-- Configuration simple et non-intrusive
+Les champs `total`, `date_ticket` et `magasin` sont des détections heuristiques (contrôle qualité
+au moment du scan) — le pipeline PC fait foi pour la structuration définitive.
 
-### 📊 Dashboard Simple
-- Vue claire de vos dépenses (jour/semaine/mois)
-- Catégorisation automatique
-- Historique détaillé
+## Technique
 
-## 🏷️ Catégories
+- Kotlin 2.0 · Jetpack Compose · Material 3
+- ML Kit Document Scanner (recadrage) + ML Kit Text Recognition (OCR, embarqué)
+- Storage Access Framework : l'utilisateur choisit le dossier de sortie, aucune permission
+  caméra/stockage requise
+- Aucune connexion réseau : tout reste sur l'appareil
+- minSdk 26 (Android 8.0), targetSdk 35
 
-L'app organise automatiquement vos dépenses en catégories :
-- 🍽️ Alimentation
-- 🚗 Transport
-- 🎮 Loisirs
-- 💊 Santé
-- 🏠 Logement
-- 👕 Vêtements
-- 🛒 Courses
-- 🍕 Restaurant
-- ☕ Café
-- 💰 Autre
+## Compilation
 
-## 🛠️ Technologies
+L'APK de debug est construit automatiquement par GitHub Actions à chaque push
+(artefact `scan-tickets-debug`). En local :
 
-- **Kotlin** - Langage moderne Android
-- **Jetpack Compose** - UI moderne et fluide
-- **Room Database** - Stockage local des données
-- **ML Kit Text Recognition** - OCR pour les tickets
-- **Android Speech Recognition** - Reconnaissance vocale
-- **WorkManager** - Notifications programmées
-- **MVVM Architecture** - Architecture propre et maintenable
+```bash
+./gradlew assembleDebug
+# APK : app/build/outputs/apk/debug/app-debug.apk
+```
 
-## 📱 Prérequis
+## Historique
 
-- Android 8.0 (API 26) ou supérieur
-- Permissions :
-  - 🎤 Microphone (pour la saisie vocale)
-  - 📷 Caméra (pour le scan de tickets)
-  - 🔔 Notifications (pour les rappels)
-
-## 🚀 Installation
-
-1. Cloner le repository
-2. Ouvrir le projet dans Android Studio
-3. Synchroniser les dépendances Gradle
-4. Compiler et installer sur votre appareil
-
-## 📖 Utilisation
-
-1. **Première utilisation** : Accordez les permissions nécessaires
-2. **Ajouter une dépense** :
-   - 🎤 Appuyez sur le bouton micro et parlez
-   - 📸 Utilisez le bouton caméra pour scanner un ticket
-   - ✏️ Ou ajoutez manuellement via le bouton "+"
-3. **Consulter vos dépenses** : Naviguez entre Aujourd'hui/Semaine/Mois
-4. **Gérer** : Appuyez sur une dépense pour la supprimer
-
-## 🎨 Design
-
-Interface minimaliste suivant les guidelines Material Design 3 avec :
-- Thème adaptatif (clair/sombre)
-- Animations fluides
-- Navigation intuitive
-- Accessibilité optimisée
-
-## 🔒 Confidentialité
-
-- Toutes les données restent **localement sur votre appareil**
-- Aucune connexion internet requise
-- Aucune collecte de données
-- Base de données chiffrée
-
-## 🎓 Méthodologie
-
-Développé en suivant la **méthode BMAD** (Breakthrough Method for Agile AI-Driven Development) :
-- Phase Découverte : Identification du pain point réel
-- Phase Brainstorming : Solutions d'automatisation
-- Phase Spécification : Définition du MVP
-- Phase Développement : Implémentation itérative
-
-## 🤝 Contribution
-
-Cette application a été créée de manière personnalisée pour répondre à des besoins spécifiques. N'hésitez pas à forker et adapter à vos propres besoins !
-
-## 📄 Licence
-
-Ce projet est open source et disponible sous licence MIT.
-
-## 🙏 Remerciements
-
-Développé avec Claude Code en utilisant la méthodologie BMAD pour créer une application de budget qui soit **vraiment utilisable au quotidien**.
-
----
-
-**Budget Voice** - Gérez votre budget sans friction ! 💰✨
+L'ancienne application « Budget Voice » est archivée sur la branche `archive/budget-voice-v1`.
