@@ -1,34 +1,49 @@
-# Scan Tickets 🧾📱
+# Scan Tickets 🧾
 
-Application Android qui sert de **porte d'entrée** au système local d'analyse de tickets de caisse
-(décrit dans le plan d'action « Scanner de tickets de caisse » — pipeline PC avec OCR, LLM local et SQLite).
+[![Build APK](https://github.com/trygonome/Apks/actions/workflows/build-apk.yml/badge.svg)](https://github.com/trygonome/Apks/actions/workflows/build-apk.yml)
 
-## Rôle de l'app
+Application Android de numérisation de tickets de caisse, 100 % hors ligne.
+Porte d'entrée du système local d'analyse de dépenses (pipeline PC avec OCR,
+LLM local et SQLite décrit dans le plan d'action « Scanner de tickets de caisse »),
+et utilisable seule au quotidien.
 
-Le téléphone fait **une seule chose, bien** : capturer des tickets exploitables et les mettre
-à disposition du PC.
+**📥 Télécharger la dernière version :**
+https://github.com/trygonome/Apks/raw/main/apk/scan-tickets.apk
 
-1. **Scan** — recadrage, redressement de perspective et nettoyage automatiques
-   (API ML Kit Document Scanner, hors ligne).
-2. **OCR local** — le texte brut est extrait sur le téléphone (ML Kit Text Recognition,
-   modèle embarqué, 100 % hors ligne). L'app affiche immédiatement le total et la date
-   détectés : si rien n'est lu, on rescanne sur place.
-3. **Dépôt** — chaque scan est enregistré dans un dossier choisi par l'utilisateur :
-   - `ticket_<horodatage>.jpg` — la photo recadrée ;
-   - `ticket_<horodatage>.json` — texte OCR + total/date/magasin détectés.
+## Fonctionnalités
 
-En plus de la capture, l'app est **utilisable seule au quotidien** :
+- **Scan intelligent** — détection du ticket, recadrage et redressement de
+  perspective automatiques (ML Kit Document Scanner, hors ligne).
+- **OCR embarqué** — texte extrait sur le téléphone (ML Kit Text Recognition,
+  modèle inclus dans l'APK, aucune connexion requise).
+- **Reconstruction géométrique** — les lignes OCR sont réassemblées d'après
+  leurs coordonnées pour restituer la mise en page physique du ticket
+  (libellé + prix sur la même ligne), au lieu du texte par blocs de ML Kit
+  qui mélange les colonnes.
+- **Analyse à scores** — total, date (numérique ou en toutes lettres), enseigne
+  (dictionnaire d'enseignes FR/BE + ancrage sur l'adresse) et **articles ligne
+  par ligne**, avec contrôle de cohérence (somme des articles vs total) et
+  niveau de confiance affiché.
+- **Correction manuelle** — chaque ticket s'ouvre en détail : champs éditables,
+  articles détectés, texte OCR complet, suppression. Les tickets douteux sont
+  marqués « à vérifier ».
+- **Stats du mois** — total dépensé et nombre de tickets en cours de mois.
+- **Export CSV** — `tickets.csv` (séparateur `;`, compatible Excel/LibreOffice FR).
 
-- **Correction manuelle** — appuyer sur un ticket ouvre le détail : photo, champs
-  total/date/magasin éditables (réécrits dans le JSON avec `corrige_manuellement: true`),
-  texte OCR complet, suppression.
-- **Stats du mois** — total dépensé et nombre de tickets du mois en cours.
-- **Export CSV** — génère `tickets.csv` (séparateur `;`, compatible Excel/LibreOffice FR)
-  dans le dossier de sortie.
+## Chaîne complète
 
-Ce dossier est ensuite synchronisé vers le PC (Syncthing recommandé, ou transfert par câble).
-La **structuration fine** (articles, prix, catégories) reste au PC : c'est le rôle du LLM local
-(Qwen via llama.cpp) du plan d'action.
+```
+📱 Scan (recadrage auto) → OCR local → analyse → dossier de sortie
+                                                    ├── ticket_<date>.jpg
+                                                    ├── ticket_<date>.json
+                                                    └── tickets.csv
+💻 PC (optionnel) : Syncthing → PaddleOCR/Qwen → SQLite → tableaux de bord
+```
+
+Le dossier de sortie est choisi par l'utilisateur (Storage Access Framework —
+aucune permission caméra ni stockage). Pointez Syncthing dessus pour alimenter
+le pipeline PC ; les corrections manuelles y sont signalées
+(`corrige_manuellement: true`) et priment sur la détection automatique.
 
 ## Format du fichier JSON
 
@@ -36,39 +51,47 @@ La **structuration fine** (articles, prix, catégories) reste au PC : c'est le r
 {
   "fichier_image": "ticket_2026-07-03_141530.jpg",
   "scanne_le": "2026-07-03_141530",
-  "total": "23.47",
-  "date_ticket": "03/07/2026",
-  "magasin": "CARREFOUR",
+  "total": "13.10",
+  "date_ticket": "25/06/2026",
+  "magasin": "Quick B782 Jenappes",
+  "confiance_total": "haute",
+  "somme_articles_ok": false,
   "corrige_manuellement": false,
-  "texte_ocr": "… texte brut complet du ticket …"
+  "articles": [
+    { "libelle": "Eden CHICKEN ML", "prix": "12.10", "quantite": 1 },
+    { "libelle": "Rabais", "prix": "-2.35", "quantite": 1 }
+  ],
+  "texte_ocr": "… texte brut reconstruit du ticket …"
 }
 ```
 
-Les champs `total`, `date_ticket` et `magasin` sont des détections heuristiques (contrôle qualité
-au moment du scan) — le pipeline PC fait foi pour la structuration définitive.
-
 ## Technique
 
-- Kotlin 2.0 · Jetpack Compose · Material 3
-- ML Kit Document Scanner (recadrage) + ML Kit Text Recognition (OCR, embarqué)
-- Storage Access Framework : l'utilisateur choisit le dossier de sortie, aucune permission
-  caméra/stockage requise
-- Aucune connexion réseau : tout reste sur l'appareil
-- minSdk 26 (Android 8.0), targetSdk 35
+- Kotlin 2.0 · Jetpack Compose · Material 3 · minSdk 26 (Android 8.0), targetSdk 35
+- ML Kit Document Scanner + Text Recognition (embarqué)
+- Analyse déterministe et testée : 17 tests unitaires, dont des tickets réels
+- Release signée et minifiée (R8, sans obfuscation)
 
 ## Compilation
 
-**Téléchargement direct de la dernière version** :
-https://github.com/trygonome/Apks/raw/main/apk/scan-tickets.apk
-
-L'APK de debug est aussi construit automatiquement par GitHub Actions à chaque push
-(artefact `scan-tickets-debug`). En local :
-
 ```bash
-./gradlew assembleDebug
-# APK : app/build/outputs/apk/debug/app-debug.apk
+./gradlew testDebugUnitTest   # tests du moteur d'analyse
+./gradlew assembleRelease     # APK signé : app/build/outputs/apk/release/app-release.apk
 ```
+
+La CI GitHub Actions exécute les tests et produit l'APK signé à chaque push
+(artefact `scan-tickets-release`).
+
+> 🔐 **Signature** : la clé (`signing/scantickets.jks`) n'est pas versionnée
+> (dépôt public). En son absence — sur la CI notamment — la release est signée
+> avec la clé de debug : l'APK reste installable. L'APK publié dans `apk/` est
+> signé avec la clé de release.
 
 ## Historique
 
-L'ancienne application « Budget Voice » est archivée sur la branche `archive/budget-voice-v1`.
+L'ancienne application « Budget Voice » est archivée sur la branche
+[`archive/budget-voice-v1`](https://github.com/trygonome/Apks/tree/archive/budget-voice-v1).
+
+## Licence
+
+[MIT](LICENSE)

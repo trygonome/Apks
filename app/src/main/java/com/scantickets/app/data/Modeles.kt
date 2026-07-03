@@ -2,11 +2,33 @@ package com.scantickets.app.data
 
 import android.net.Uri
 
-/** Données extraites d'un ticket par l'OCR + le parseur. */
+/** Un article détecté sur le ticket. */
+data class ArticleTicket(
+    val libelle: String,
+    val prix: String,
+    val quantite: Int = 1
+)
+
+/** Niveau de confiance de la détection automatique du total. */
+enum class Confiance(val libelle: String) {
+    HAUTE("haute"),
+    MOYENNE("moyenne"),
+    BASSE("basse");
+
+    companion object {
+        fun depuisLibelle(libelle: String?): Confiance =
+            entries.firstOrNull { it.libelle == libelle } ?: BASSE
+    }
+}
+
+/** Données extraites d'un ticket par l'OCR + l'analyseur. */
 data class DonneesTicket(
     val total: String?,
     val dateTicket: String?,
     val magasin: String?,
+    val articles: List<ArticleTicket>,
+    val coherenceOk: Boolean?,
+    val confiance: Confiance,
     val texteOcr: String
 )
 
@@ -17,6 +39,13 @@ data class ScanEnregistre(
     val total: String?,
     val dateTicket: String?,
     val magasin: String?,
+    val articles: List<ArticleTicket>,
+    val coherenceOk: Boolean?,
+    val confiance: Confiance,
     val scanneLe: String,
     val texteOcr: String
-)
+) {
+    /** Le scan mérite une vérification humaine. */
+    val aVerifier: Boolean
+        get() = total == null || confiance == Confiance.BASSE || coherenceOk == false
+}

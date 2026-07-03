@@ -3,6 +3,7 @@ package com.scantickets.app.data
 import android.content.Context
 import android.net.Uri
 import androidx.documentfile.provider.DocumentFile
+import org.json.JSONArray
 import org.json.JSONObject
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -47,6 +48,9 @@ object ScanStorage {
             total = donnees.total,
             dateTicket = donnees.dateTicket,
             magasin = donnees.magasin,
+            articles = donnees.articles,
+            coherenceOk = donnees.coherenceOk,
+            confiance = donnees.confiance,
             texteOcr = donnees.texteOcr,
             corrige = false
         )
@@ -76,6 +80,9 @@ object ScanStorage {
             total = total,
             dateTicket = dateTicket,
             magasin = magasin,
+            articles = scan.articles,
+            coherenceOk = scan.coherenceOk,
+            confiance = Confiance.HAUTE, // validé par un humain
             texteOcr = scan.texteOcr,
             corrige = true
         )
@@ -108,13 +115,15 @@ object ScanStorage {
         val fichier = dossier.createFile("text/csv", "tickets") ?: return null
 
         val contenu = buildString {
-            append("fichier;scanne_le;date_ticket;magasin;total\n")
+            append("fichier;scanne_le;date_ticket;magasin;total;confiance;nb_articles\n")
             for (scan in scans.sortedBy { it.scanneLe }) {
                 append("${scan.nomBase}.jpg;")
                 append("${scan.scanneLe};")
                 append("${champCsv(scan.dateTicket)};")
                 append("${champCsv(scan.magasin)};")
-                append("${scan.total ?: ""}\n")
+                append("${scan.total ?: ""};")
+                append("${scan.confiance.libelle};")
+                append("${scan.articles.size}\n")
             }
         }
         val ecrit = context.contentResolver.openOutputStream(fichier.uri, "wt")?.use { sortie ->
@@ -146,6 +155,10 @@ object ScanStorage {
                         total = json.champOuNull("total"),
                         dateTicket = json.champOuNull("date_ticket"),
                         magasin = json.champOuNull("magasin"),
+                        articles = lireArticles(json),
+                        coherenceOk = if (json.isNull("somme_articles_ok")) null
+                        else json.optBoolean("somme_articles_ok"),
+                        confiance = Confiance.depuisLibelle(json.champOuNull("confiance_total")),
                         scanneLe = json.optString("scanne_le", ""),
                         texteOcr = json.optString("texte_ocr", "")
                     )
@@ -154,12 +167,27 @@ object ScanStorage {
             .sortedByDescending { it.scanneLe }
     }
 
+    private fun lireArticles(json: JSONObject): List<ArticleTicket> {
+        val tableau = json.optJSONArray("articles") ?: return emptyList()
+        return (0 until tableau.length()).mapNotNull { i ->
+            val article = tableau.optJSONObject(i) ?: return@mapNotNull null
+            ArticleTicket(
+                libelle = article.optString("libelle"),
+                prix = article.optString("prix"),
+                quantite = article.optInt("quantite", 1)
+            )
+        }
+    }
+
     private fun jsonTicket(
         nomImage: String,
         scanneLe: String,
         total: String?,
         dateTicket: String?,
         magasin: String?,
+        articles: List<ArticleTicket>,
+        coherenceOk: Boolean?,
+        confiance: Confiance,
         texteOcr: String,
         corrige: Boolean
     ): JSONObject = JSONObject().apply {
@@ -168,7 +196,18 @@ object ScanStorage {
         put("total", total ?: JSONObject.NULL)
         put("date_ticket", dateTicket ?: JSONObject.NULL)
         put("magasin", magasin ?: JSONObject.NULL)
+        put("confiance_total", confiance.libelle)
+        put("somme_articles_ok", coherenceOk ?: JSONObject.NULL)
         put("corrige_manuellement", corrige)
+        put("articles", JSONArray().apply {
+            for (article in articles) {
+                put(JSONObject().apply {
+                    put("libelle", article.libelle)
+                    put("prix", article.prix)
+                    put("quantite", article.quantite)
+                })
+            }
+        })
         put("texte_ocr", texteOcr)
     }
 

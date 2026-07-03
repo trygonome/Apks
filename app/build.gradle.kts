@@ -12,13 +12,33 @@ android {
         applicationId = "com.scantickets.app"
         minSdk = 26
         targetSdk = 35
-        versionCode = 3
-        versionName = "1.2"
+        versionCode = 5
+        versionName = "2.0"
+    }
+
+    // La clé de signature n'est PAS versionnée (dépôt public). Si
+    // signing/scantickets.jks est présent localement, la release est signée
+    // avec ; sinon (CI notamment) on retombe sur la signature de debug —
+    // l'APK reste installable, seule la continuité des mises à jour change.
+    val keystoreRelease = rootProject.file("signing/scantickets.jks")
+    signingConfigs {
+        create("release") {
+            storeFile = keystoreRelease
+            storePassword = System.getenv("SCANTICKETS_KEYSTORE_PASSWORD") ?: "scantickets2026"
+            keyAlias = "scantickets"
+            keyPassword = System.getenv("SCANTICKETS_KEYSTORE_PASSWORD") ?: "scantickets2026"
+        }
     }
 
     buildTypes {
         release {
-            isMinifyEnabled = false
+            isMinifyEnabled = true
+            isShrinkResources = true
+            signingConfig = if (keystoreRelease.exists()) {
+                signingConfigs.getByName("release")
+            } else {
+                signingConfigs.getByName("debug")
+            }
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"

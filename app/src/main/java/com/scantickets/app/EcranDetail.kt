@@ -116,6 +116,41 @@ fun EcranDetail(scan: ScanEnregistre, vm: ScanViewModel) {
             }
         }
 
+        if (scan.articles.isNotEmpty()) {
+            Spacer(Modifier.height(16.dp))
+            Text(
+                "Articles détectés (${scan.articles.size})",
+                style = MaterialTheme.typography.titleSmall
+            )
+            Spacer(Modifier.height(4.dp))
+            for (article in scan.articles) {
+                Row(modifier = Modifier.fillMaxWidth()) {
+                    Text(
+                        text = if (article.quantite > 1) {
+                            "${article.quantite} × ${article.libelle}"
+                        } else {
+                            article.libelle
+                        },
+                        style = MaterialTheme.typography.bodySmall,
+                        modifier = Modifier.weight(1f)
+                    )
+                    Text(
+                        text = "${article.prix} €",
+                        style = MaterialTheme.typography.bodySmall
+                    )
+                }
+            }
+            if (scan.coherenceOk == false) {
+                Spacer(Modifier.height(6.dp))
+                Text(
+                    "⚠ La somme des articles ne correspond pas au total détecté — " +
+                        "vérifie le total ci-dessus.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.error
+                )
+            }
+        }
+
         Spacer(Modifier.height(8.dp))
         TextButton(onClick = { voirOcr = !voirOcr }) {
             Text(if (voirOcr) "Masquer le texte OCR" else "Voir le texte OCR complet")

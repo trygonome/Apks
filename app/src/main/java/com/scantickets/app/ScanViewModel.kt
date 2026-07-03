@@ -13,9 +13,10 @@ import androidx.lifecycle.viewModelScope
 import com.google.mlkit.vision.common.InputImage
 import com.google.mlkit.vision.text.TextRecognition
 import com.google.mlkit.vision.text.latin.TextRecognizerOptions
+import com.scantickets.app.data.AnalyseurTicket
+import com.scantickets.app.data.ReconstructeurLignes
 import com.scantickets.app.data.ScanEnregistre
 import com.scantickets.app.data.ScanStorage
-import com.scantickets.app.data.TicketParser
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
@@ -64,14 +65,14 @@ class ScanViewModel(application: Application) : AndroidViewModel(application) {
             enTraitement = true
             try {
                 val texte = withContext(Dispatchers.IO) { lireTexte(imageUri) }
-                val donnees = TicketParser.analyser(texte)
+                val donnees = AnalyseurTicket.analyser(texte)
                 val ok = withContext(Dispatchers.IO) {
                     ScanStorage.enregistrerScan(getApplication(), dossier, imageUri, donnees)
                 }
                 message = if (ok) {
                     val total = donnees.total?.let { "$it €" } ?: "total non détecté"
                     val date = donnees.dateTicket ?: "date non détectée"
-                    "Ticket enregistré — $total, $date"
+                    "Ticket enregistré — $total, $date (confiance ${donnees.confiance.libelle})"
                 } else {
                     "Impossible d'écrire dans le dossier de sortie."
                 }
@@ -132,13 +133,34 @@ class ScanViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
+    /**
+     * OCR puis reconstruction de la mise en page physique du ticket à partir
+     * des coordonnées des lignes : ML Kit renvoie le texte par blocs, ce qui
+     * mélange les colonnes libellés/prix ; on les recolle par rangée.
+     */
     private suspend fun lireTexte(imageUri: Uri): String {
         val image = InputImage.fromFilePath(getApplication(), imageUri)
         val recognizer = TextRecognition.getClient(TextRecognizerOptions.DEFAULT_OPTIONS)
-        return try {
-            recognizer.process(image).await().text
+        val resultat = try {
+            recognizer.process(image).await()
         } finally {
             recognizer.close()
+        }
+        val fragments = resultat.textBlocks
+            .flatMap { it.lines }
+            .mapNotNull { ligne ->
+                val boite = ligne.boundingBox ?: return@mapNotNull null
+                ReconstructeurLignes.FragmentOcr(
+                    texte = ligne.text,
+                    gauche = boite.left,
+                    haut = boite.top,
+                    bas = boite.bottom
+                )
+            }
+        return if (fragments.isNotEmpty()) {
+            ReconstructeurLignes.reconstruire(fragments)
+        } else {
+            resultat.text
         }
     }
 

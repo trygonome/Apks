@@ -311,10 +311,20 @@ private fun CarteScan(scan: ScanEnregistre, onClic: () -> Unit) {
             )
             Spacer(Modifier.width(12.dp))
             Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = scan.total?.let { "$it €" } ?: "Total non détecté",
-                    style = MaterialTheme.typography.titleMedium
-                )
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        text = scan.total?.let { "$it €" } ?: "Total non détecté",
+                        style = MaterialTheme.typography.titleMedium
+                    )
+                    if (scan.aVerifier) {
+                        Spacer(Modifier.width(8.dp))
+                        Text(
+                            text = "à vérifier",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.error
+                        )
+                    }
+                }
                 Text(
                     text = listOfNotNull(scan.magasin, scan.dateTicket)
                         .joinToString(" · ")
