@@ -17,5 +17,6 @@ data class ScanEnregistre(
     val total: String?,
     val dateTicket: String?,
     val magasin: String?,
-    val scanneLe: String
+    val scanneLe: String,
+    val texteOcr: String
 )

@@ -32,6 +32,8 @@ class ScanViewModel(application: Application) : AndroidViewModel(application) {
     var enTraitement by mutableStateOf(false)
         private set
     var message by mutableStateOf<String?>(null)
+    var scanSelectionne by mutableStateOf<ScanEnregistre?>(null)
+        private set
 
     init {
         rafraichir()
@@ -47,6 +49,10 @@ class ScanViewModel(application: Application) : AndroidViewModel(application) {
         prefs.edit().putString("dossier", uri.toString()).apply()
         dossierUri = uri
         rafraichir()
+    }
+
+    fun selectionner(scan: ScanEnregistre?) {
+        scanSelectionne = scan
     }
 
     fun traiterScan(imageUri: Uri) {
@@ -74,6 +80,54 @@ class ScanViewModel(application: Application) : AndroidViewModel(application) {
                 message = "Erreur pendant le traitement : ${e.message}"
             } finally {
                 enTraitement = false
+            }
+        }
+    }
+
+    fun enregistrerCorrection(
+        scan: ScanEnregistre,
+        total: String?,
+        dateTicket: String?,
+        magasin: String?
+    ) {
+        val dossier = dossierUri ?: return
+        viewModelScope.launch {
+            val ok = withContext(Dispatchers.IO) {
+                ScanStorage.mettreAJourScan(
+                    getApplication(), dossier, scan,
+                    total?.takeIf { it.isNotBlank() },
+                    dateTicket?.takeIf { it.isNotBlank() },
+                    magasin?.takeIf { it.isNotBlank() }
+                )
+            }
+            message = if (ok) "Correction enregistrée." else "Impossible d'enregistrer la correction."
+            scanSelectionne = null
+            rafraichir()
+        }
+    }
+
+    fun supprimerScan(scan: ScanEnregistre) {
+        val dossier = dossierUri ?: return
+        viewModelScope.launch {
+            val ok = withContext(Dispatchers.IO) {
+                ScanStorage.supprimerScan(getApplication(), dossier, scan)
+            }
+            message = if (ok) "Ticket supprimé." else "Impossible de supprimer ce ticket."
+            scanSelectionne = null
+            rafraichir()
+        }
+    }
+
+    fun exporterCsv() {
+        val dossier = dossierUri ?: return
+        viewModelScope.launch {
+            val nom = withContext(Dispatchers.IO) {
+                ScanStorage.exporterCsv(getApplication(), dossier, scans)
+            }
+            message = if (nom != null) {
+                "Export $nom créé dans le dossier de sortie."
+            } else {
+                "Échec de l'export CSV."
             }
         }
     }

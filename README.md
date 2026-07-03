@@ -17,6 +17,15 @@ Le téléphone fait **une seule chose, bien** : capturer des tickets exploitable
    - `ticket_<horodatage>.jpg` — la photo recadrée ;
    - `ticket_<horodatage>.json` — texte OCR + total/date/magasin détectés.
 
+En plus de la capture, l'app est **utilisable seule au quotidien** :
+
+- **Correction manuelle** — appuyer sur un ticket ouvre le détail : photo, champs
+  total/date/magasin éditables (réécrits dans le JSON avec `corrige_manuellement: true`),
+  texte OCR complet, suppression.
+- **Stats du mois** — total dépensé et nombre de tickets du mois en cours.
+- **Export CSV** — génère `tickets.csv` (séparateur `;`, compatible Excel/LibreOffice FR)
+  dans le dossier de sortie.
+
 Ce dossier est ensuite synchronisé vers le PC (Syncthing recommandé, ou transfert par câble).
 La **structuration fine** (articles, prix, catégories) reste au PC : c'est le rôle du LLM local
 (Qwen via llama.cpp) du plan d'action.
@@ -30,6 +39,7 @@ La **structuration fine** (articles, prix, catégories) reste au PC : c'est le r
   "total": "23.47",
   "date_ticket": "03/07/2026",
   "magasin": "CARREFOUR",
+  "corrige_manuellement": false,
   "texte_ocr": "… texte brut complet du ticket …"
 }
 ```

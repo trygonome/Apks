@@ -41,20 +41,87 @@ object ScanStorage {
             return false
         }
 
-        val json = JSONObject().apply {
-            put("fichier_image", fichierImage.name ?: "$nomBase.jpg")
-            put("scanne_le", horodatage)
-            put("total", donnees.total ?: JSONObject.NULL)
-            put("date_ticket", donnees.dateTicket ?: JSONObject.NULL)
-            put("magasin", donnees.magasin ?: JSONObject.NULL)
-            put("texte_ocr", donnees.texteOcr)
-        }
+        val json = jsonTicket(
+            nomImage = fichierImage.name ?: "$nomBase.jpg",
+            scanneLe = horodatage,
+            total = donnees.total,
+            dateTicket = donnees.dateTicket,
+            magasin = donnees.magasin,
+            texteOcr = donnees.texteOcr,
+            corrige = false
+        )
         val fichierJson = dossier.createFile("application/json", nomBase) ?: return false
         resolver.openOutputStream(fichierJson.uri)?.use { sortie ->
             sortie.write(json.toString(2).toByteArray(Charsets.UTF_8))
         } ?: return false
 
         return true
+    }
+
+    /** Réécrit le JSON d'un scan après correction manuelle dans l'app. */
+    fun mettreAJourScan(
+        context: Context,
+        dossierUri: Uri,
+        scan: ScanEnregistre,
+        total: String?,
+        dateTicket: String?,
+        magasin: String?
+    ): Boolean {
+        val dossier = DocumentFile.fromTreeUri(context, dossierUri) ?: return false
+        val fichierJson = dossier.listFiles()
+            .firstOrNull { it.name == "${scan.nomBase}.json" } ?: return false
+        val json = jsonTicket(
+            nomImage = "${scan.nomBase}.jpg",
+            scanneLe = scan.scanneLe,
+            total = total,
+            dateTicket = dateTicket,
+            magasin = magasin,
+            texteOcr = scan.texteOcr,
+            corrige = true
+        )
+        return context.contentResolver.openOutputStream(fichierJson.uri, "wt")?.use { sortie ->
+            sortie.write(json.toString(2).toByteArray(Charsets.UTF_8))
+            true
+        } ?: false
+    }
+
+    /** Supprime la photo et le JSON d'un scan. */
+    fun supprimerScan(context: Context, dossierUri: Uri, scan: ScanEnregistre): Boolean {
+        val dossier = DocumentFile.fromTreeUri(context, dossierUri) ?: return false
+        var supprime = false
+        for (fichier in dossier.listFiles()) {
+            val nom = fichier.name ?: continue
+            if (nom == "${scan.nomBase}.jpg" || nom == "${scan.nomBase}.json") {
+                supprime = fichier.delete() || supprime
+            }
+        }
+        return supprime
+    }
+
+    /**
+     * Écrit `tickets.csv` (séparateur « ; », compatible Excel FR) dans le dossier
+     * de sortie. Retourne le nom du fichier créé, ou null en cas d'échec.
+     */
+    fun exporterCsv(context: Context, dossierUri: Uri, scans: List<ScanEnregistre>): String? {
+        val dossier = DocumentFile.fromTreeUri(context, dossierUri) ?: return null
+        dossier.listFiles().firstOrNull { it.name == "tickets.csv" }?.delete()
+        val fichier = dossier.createFile("text/csv", "tickets") ?: return null
+
+        val contenu = buildString {
+            append("fichier;scanne_le;date_ticket;magasin;total\n")
+            for (scan in scans.sortedBy { it.scanneLe }) {
+                append("${scan.nomBase}.jpg;")
+                append("${scan.scanneLe};")
+                append("${champCsv(scan.dateTicket)};")
+                append("${champCsv(scan.magasin)};")
+                append("${scan.total ?: ""}\n")
+            }
+        }
+        val ecrit = context.contentResolver.openOutputStream(fichier.uri, "wt")?.use { sortie ->
+            sortie.write(contenu.toByteArray(Charsets.UTF_8))
+            true
+        } ?: false
+        return if (ecrit) fichier.name else null
     }
 
     fun listerScans(context: Context, dossierUri: Uri): List<ScanEnregistre> {
@@ -79,12 +146,34 @@ object ScanStorage {
                         total = json.champOuNull("total"),
                         dateTicket = json.champOuNull("date_ticket"),
                         magasin = json.champOuNull("magasin"),
-                        scanneLe = json.optString("scanne_le", "")
+                        scanneLe = json.optString("scanne_le", ""),
+                        texteOcr = json.optString("texte_ocr", "")
                     )
                 }.getOrNull()
             }
             .sortedByDescending { it.scanneLe }
     }
+
+    private fun jsonTicket(
+        nomImage: String,
+        scanneLe: String,
+        total: String?,
+        dateTicket: String?,
+        magasin: String?,
+        texteOcr: String,
+        corrige: Boolean
+    ): JSONObject = JSONObject().apply {
+        put("fichier_image", nomImage)
+        put("scanne_le", scanneLe)
+        put("total", total ?: JSONObject.NULL)
+        put("date_ticket", dateTicket ?: JSONObject.NULL)
+        put("magasin", magasin ?: JSONObject.NULL)
+        put("corrige_manuellement", corrige)
+        put("texte_ocr", texteOcr)
+    }
+
+    private fun champCsv(valeur: String?): String =
+        (valeur ?: "").replace(";", ",").replace("\n", " ")
 
     private fun JSONObject.champOuNull(cle: String): String? =
         if (isNull(cle)) null else optString(cle).takeIf { it.isNotEmpty() }

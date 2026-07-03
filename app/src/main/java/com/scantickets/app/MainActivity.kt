@@ -7,6 +7,7 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.result.IntentSenderRequest
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -22,14 +23,17 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.ReceiptLong
 import androidx.compose.material.icons.filled.DocumentScanner
 import androidx.compose.material.icons.filled.Folder
-import androidx.compose.material.icons.automirrored.filled.ReceiptLong
+import androidx.compose.material.icons.filled.TableChart
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
@@ -53,6 +57,9 @@ import com.google.mlkit.vision.documentscanner.GmsDocumentScanning
 import com.google.mlkit.vision.documentscanner.GmsDocumentScanningResult
 import com.scantickets.app.data.ScanEnregistre
 import com.scantickets.app.ui.theme.ScanTicketsTheme
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -112,10 +119,29 @@ fun EcranPrincipal(activity: ComponentActivity, vm: ScanViewModel = viewModel())
         }
     }
 
+    val detail = vm.scanSelectionne
+
     Scaffold(
-        topBar = { TopAppBar(title = { Text("Scan Tickets") }) },
+        topBar = {
+            TopAppBar(
+                title = { Text(if (detail != null) "Détail du ticket" else "Scan Tickets") },
+                navigationIcon = {
+                    if (detail != null) {
+                        IconButton(onClick = { vm.selectionner(null) }) {
+                            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Retour")
+                        }
+                    }
+                }
+            )
+        },
         snackbarHost = { SnackbarHost(snackbar) }
     ) { innerPadding ->
+        if (detail != null) {
+            Column(Modifier.padding(innerPadding)) {
+                EcranDetail(detail, vm)
+            }
+            return@Scaffold
+        }
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -146,18 +172,56 @@ fun EcranPrincipal(activity: ComponentActivity, vm: ScanViewModel = viewModel())
                         Text("Scanner un ticket", style = MaterialTheme.typography.titleMedium)
                     }
                 }
+                Spacer(Modifier.height(12.dp))
+                CarteStatsMois(vm.scans)
                 Row(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.End
+                    horizontalArrangement = Arrangement.SpaceBetween
                 ) {
+                    TextButton(
+                        onClick = vm::exporterCsv,
+                        enabled = vm.scans.isNotEmpty()
+                    ) {
+                        Icon(Icons.Filled.TableChart, contentDescription = null)
+                        Spacer(Modifier.width(6.dp))
+                        Text("Exporter CSV")
+                    }
                     TextButton(onClick = { choixDossier.launch(null) }) {
                         Icon(Icons.Filled.Folder, contentDescription = null)
                         Spacer(Modifier.width(6.dp))
-                        Text("Changer le dossier de sortie")
+                        Text("Dossier")
                     }
                 }
-                ListeScans(vm.scans)
+                ListeScans(vm.scans, onClic = vm::selectionner)
             }
+        }
+    }
+}
+
+@Composable
+private fun CarteStatsMois(scans: List<ScanEnregistre>) {
+    val moisCourant = remember { SimpleDateFormat("yyyy-MM", Locale.FRANCE).format(Date()) }
+    val scansDuMois = scans.filter { it.scanneLe.startsWith(moisCourant) }
+    val totalMois = scansDuMois.sumOf { it.total?.toDoubleOrNull() ?: 0.0 }
+
+    Card(modifier = Modifier.fillMaxWidth()) {
+        Row(
+            modifier = Modifier.padding(16.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Column(modifier = Modifier.weight(1f)) {
+                Text("Ce mois-ci", style = MaterialTheme.typography.labelMedium)
+                Text(
+                    String.format(Locale.FRANCE, "%.2f €", totalMois),
+                    style = MaterialTheme.typography.headlineSmall,
+                    color = MaterialTheme.colorScheme.primary
+                )
+            }
+            Text(
+                "${scansDuMois.size} ticket${if (scansDuMois.size > 1) "s" else ""}",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.outline
+            )
         }
     }
 }
@@ -191,7 +255,10 @@ private fun CarteChoixDossier(onChoisir: () -> Unit) {
 }
 
 @Composable
-private fun ListeScans(scans: List<ScanEnregistre>) {
+private fun ListeScans(
+    scans: List<ScanEnregistre>,
+    onClic: (ScanEnregistre) -> Unit
+) {
     if (scans.isEmpty()) {
         Spacer(Modifier.height(32.dp))
         Column(
@@ -218,14 +285,18 @@ private fun ListeScans(scans: List<ScanEnregistre>) {
         contentPadding = PaddingValues(vertical = 12.dp)
     ) {
         items(scans, key = { it.nomBase }) { scan ->
-            CarteScan(scan)
+            CarteScan(scan, onClic = { onClic(scan) })
         }
     }
 }
 
 @Composable
-private fun CarteScan(scan: ScanEnregistre) {
-    Card(modifier = Modifier.fillMaxWidth()) {
+private fun CarteScan(scan: ScanEnregistre, onClic: () -> Unit) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClic)
+    ) {
         Row(
             modifier = Modifier.padding(12.dp),
             verticalAlignment = Alignment.CenterVertically
