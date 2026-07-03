@@ -76,10 +76,48 @@ object AnalyseurTicket {
             dateTicket = detecterDate(texte),
             magasin = detecterMagasin(lignes),
             articles = articles,
+            tva = detecterTva(lignes, total.valeur),
             coherenceOk = coherence,
             confiance = total.confiance,
             texteOcr = texte
         )
+    }
+
+    // ---------- TVA ----------
+
+    // Taux en vigueur : Belgique 6/12/21, France 2,1/5,5/10/20.
+    private val tauxTvaValides = setOf("2.1", "5.5", "6", "10", "12", "20", "21")
+    private val tauxRegex = Regex("""(\d{1,2}(?:[.,]\d{1,2})?)\s*%""")
+    private val motTvaRegex = Regex("""(?i)\b(tva|btw|t\.v\.a)\b""")
+
+    /**
+     * Lignes de TVA du ticket : un taux valide suivi d'un montant sur la même
+     * ligne (mise en page courante « TVA 21%  base  montant » — le montant de
+     * taxe est le dernier nombre de la ligne).
+     */
+    private fun detecterTva(lignes: List<String>, total: Double?): List<LigneTva> {
+        val resultat = mutableListOf<LigneTva>()
+        for (ligne in lignes) {
+            if (!ligne.contains('%')) continue
+            val taux = tauxRegex.find(ligne)?.groupValues?.get(1)
+                ?.replace(',', '.')?.toDoubleOrNull() ?: continue
+            val tauxNormalise = if (taux % 1.0 == 0.0) {
+                String.format(Locale.US, "%.0f", taux)
+            } else {
+                String.format(Locale.US, "%.1f", taux)
+            }
+            if (tauxNormalise !in tauxTvaValides && !motTvaRegex.containsMatchIn(ligne)) continue
+
+            val montant = montantsDe(ligne.replace(tauxRegex, " "))
+                .lastOrNull { it > 0 } ?: continue
+            if (total != null && montant >= total) continue
+            if (resultat.none { it.taux == tauxNormalise }) {
+                resultat.add(
+                    LigneTva(tauxNormalise, String.format(Locale.US, "%.2f", montant))
+                )
+            }
+        }
+        return resultat
     }
 
     // ---------- Total : scoring de candidats ----------

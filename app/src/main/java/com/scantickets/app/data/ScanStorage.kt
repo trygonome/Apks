@@ -49,6 +49,7 @@ object ScanStorage {
             dateTicket = donnees.dateTicket,
             magasin = donnees.magasin,
             articles = donnees.articles,
+            tva = donnees.tva,
             coherenceOk = donnees.coherenceOk,
             confiance = donnees.confiance,
             texteOcr = donnees.texteOcr,
@@ -81,6 +82,7 @@ object ScanStorage {
             dateTicket = dateTicket,
             magasin = magasin,
             articles = scan.articles,
+            tva = scan.tva,
             coherenceOk = scan.coherenceOk,
             confiance = Confiance.HAUTE, // validé par un humain
             texteOcr = scan.texteOcr,
@@ -115,14 +117,16 @@ object ScanStorage {
         val fichier = dossier.createFile("text/csv", "tickets") ?: return null
 
         val contenu = buildString {
-            append("fichier;scanne_le;date_ticket;magasin;categorie;total;confiance;nb_articles\n")
+            append("fichier;scanne_le;date_ticket;magasin;categorie;total;tva_totale;confiance;nb_articles\n")
             for (scan in scans.sortedBy { it.scanneLe }) {
+                val tvaTotale = scan.tva.sumOf { it.montant.toDoubleOrNull() ?: 0.0 }
                 append("${scan.nomBase}.jpg;")
                 append("${scan.scanneLe};")
                 append("${champCsv(scan.dateTicket)};")
                 append("${champCsv(scan.magasin)};")
                 append("${Categoriseur.categoriserTicket(scan.magasin).cle};")
                 append("${scan.total ?: ""};")
+                append(if (scan.tva.isEmpty()) ";" else String.format(Locale.US, "%.2f;", tvaTotale))
                 append("${scan.confiance.libelle};")
                 append("${scan.articles.size}\n")
             }
@@ -157,6 +161,7 @@ object ScanStorage {
                         dateTicket = json.champOuNull("date_ticket"),
                         magasin = json.champOuNull("magasin"),
                         articles = lireArticles(json),
+                        tva = lireTva(json),
                         coherenceOk = if (json.isNull("somme_articles_ok")) null
                         else json.optBoolean("somme_articles_ok"),
                         confiance = Confiance.depuisLibelle(json.champOuNull("confiance_total")),
@@ -166,6 +171,17 @@ object ScanStorage {
                 }.getOrNull()
             }
             .sortedByDescending { it.scanneLe }
+    }
+
+    private fun lireTva(json: JSONObject): List<LigneTva> {
+        val tableau = json.optJSONArray("tva") ?: return emptyList()
+        return (0 until tableau.length()).mapNotNull { i ->
+            val ligne = tableau.optJSONObject(i) ?: return@mapNotNull null
+            LigneTva(
+                taux = ligne.optString("taux"),
+                montant = ligne.optString("montant")
+            )
+        }
     }
 
     private fun lireArticles(json: JSONObject): List<ArticleTicket> {
@@ -187,6 +203,7 @@ object ScanStorage {
         dateTicket: String?,
         magasin: String?,
         articles: List<ArticleTicket>,
+        tva: List<LigneTva>,
         coherenceOk: Boolean?,
         confiance: Confiance,
         texteOcr: String,
@@ -207,6 +224,14 @@ object ScanStorage {
                     put("libelle", article.libelle)
                     put("prix", article.prix)
                     put("quantite", article.quantite)
+                })
+            }
+        })
+        put("tva", JSONArray().apply {
+            for (ligne in tva) {
+                put(JSONObject().apply {
+                    put("taux", ligne.taux)
+                    put("montant", ligne.montant)
                 })
             }
         })

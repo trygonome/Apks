@@ -21,6 +21,7 @@ class StatistiquesBudgetTest {
         dateTicket = dateTicket,
         magasin = magasin,
         articles = articles,
+        tva = emptyList(),
         coherenceOk = coherenceOk,
         confiance = Confiance.HAUTE,
         scanneLe = scanneLe,

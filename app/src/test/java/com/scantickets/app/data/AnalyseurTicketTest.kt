@@ -163,6 +163,51 @@ class AnalyseurTicketTest {
     }
 
     @Test
+    fun `tva belge multi-taux extraite`() {
+        val texte = """
+            COLRUYT JEMAPPES
+            PAIN  2.10
+            AMPOULE LED  8.90
+            TOTAL  11.00
+            TVA 6%  1.98  0.12
+            TVA 21%  7.36  1.54
+        """.trimIndent()
+        val r = AnalyseurTicket.analyser(texte)
+        assertEquals("11.00", r.total)
+        assertEquals(2, r.tva.size)
+        assertEquals("6", r.tva[0].taux)
+        assertEquals("0.12", r.tva[0].montant)
+        assertEquals("21", r.tva[1].taux)
+        assertEquals("1.54", r.tva[1].montant)
+    }
+
+    @Test
+    fun `tva francaise avec virgule et sans le mot tva`() {
+        val texte = """
+            CARREFOUR CITY
+            SANDWICH  4.50
+            TOTAL  4.50
+            5,5%  4,27  0,23
+        """.trimIndent()
+        val r = AnalyseurTicket.analyser(texte)
+        assertEquals(1, r.tva.size)
+        assertEquals("5.5", r.tva[0].taux)
+        assertEquals("0.23", r.tva[0].montant)
+    }
+
+    @Test
+    fun `pourcentage de remise sans taux valide ignore`() {
+        // « -30% » n'est pas un taux de TVA : rien ne doit être extrait.
+        val texte = """
+            MAGASIN PROMO
+            PULL -30%  14.00
+            TOTAL  14.00
+        """.trimIndent()
+        val r = AnalyseurTicket.analyser(texte)
+        assertEquals(0, r.tva.size)
+    }
+
+    @Test
     fun `montant repete sans mot-cle prefere au maximum brut`() {
         val texte = """
             BAR DES SPORTS

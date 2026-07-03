@@ -106,6 +106,11 @@ La CI GitHub Actions exécute les tests et produit l'APK signé à chaque push
 L'ancienne application « Budget Voice » est archivée sur la branche
 [`archive/budget-voice-v1`](https://github.com/trygonome/Apks/tree/archive/budget-voice-v1).
 
+## Confidentialité
+
+Aucune donnée ne quitte l'appareil — voir la
+[politique de confidentialité](PRIVACY.md).
+
 ## Licence
 
 [MIT](LICENSE)

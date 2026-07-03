@@ -151,6 +151,21 @@ fun EcranDetail(scan: ScanEnregistre, vm: ScanViewModel) {
             }
         }
 
+        if (scan.tva.isNotEmpty()) {
+            Spacer(Modifier.height(12.dp))
+            Text("TVA détectée", style = MaterialTheme.typography.titleSmall)
+            for (ligne in scan.tva) {
+                Row(modifier = Modifier.fillMaxWidth()) {
+                    Text(
+                        "Taux ${ligne.taux} %",
+                        style = MaterialTheme.typography.bodySmall,
+                        modifier = Modifier.weight(1f)
+                    )
+                    Text("${ligne.montant} €", style = MaterialTheme.typography.bodySmall)
+                }
+            }
+        }
+
         Spacer(Modifier.height(8.dp))
         TextButton(onClick = { voirOcr = !voirOcr }) {
             Text(if (voirOcr) "Masquer le texte OCR" else "Voir le texte OCR complet")

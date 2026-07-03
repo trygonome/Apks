@@ -9,6 +9,12 @@ data class ArticleTicket(
     val quantite: Int = 1
 )
 
+/** Une ligne de TVA du ticket (taux en %, montant de taxe). */
+data class LigneTva(
+    val taux: String,
+    val montant: String
+)
+
 /** Niveau de confiance de la détection automatique du total. */
 enum class Confiance(val libelle: String) {
     HAUTE("haute"),
@@ -27,6 +33,7 @@ data class DonneesTicket(
     val dateTicket: String?,
     val magasin: String?,
     val articles: List<ArticleTicket>,
+    val tva: List<LigneTva>,
     val coherenceOk: Boolean?,
     val confiance: Confiance,
     val texteOcr: String
@@ -40,6 +47,7 @@ data class ScanEnregistre(
     val dateTicket: String?,
     val magasin: String?,
     val articles: List<ArticleTicket>,
+    val tva: List<LigneTva>,
     val coherenceOk: Boolean?,
     val confiance: Confiance,
     val scanneLe: String,
