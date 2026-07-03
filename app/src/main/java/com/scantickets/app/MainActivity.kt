@@ -25,8 +25,10 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.ReceiptLong
+import androidx.compose.material.icons.automirrored.filled.TrendingUp
 import androidx.compose.material.icons.filled.DocumentScanner
 import androidx.compose.material.icons.filled.Folder
+import androidx.compose.material.icons.filled.PieChart
 import androidx.compose.material.icons.filled.TableChart
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
@@ -35,6 +37,8 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.NavigationBar
+import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
@@ -47,6 +51,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -56,9 +61,8 @@ import com.google.mlkit.vision.documentscanner.GmsDocumentScannerOptions
 import com.google.mlkit.vision.documentscanner.GmsDocumentScanning
 import com.google.mlkit.vision.documentscanner.GmsDocumentScanningResult
 import com.scantickets.app.data.ScanEnregistre
+import com.scantickets.app.data.StatistiquesBudget
 import com.scantickets.app.ui.theme.ScanTicketsTheme
-import java.text.SimpleDateFormat
-import java.util.Date
 import java.util.Locale
 
 class MainActivity : ComponentActivity() {
@@ -70,6 +74,12 @@ class MainActivity : ComponentActivity() {
             }
         }
     }
+}
+
+private fun iconeOnglet(onglet: Onglet): ImageVector = when (onglet) {
+    Onglet.TICKETS -> Icons.AutoMirrored.Filled.ReceiptLong
+    Onglet.BUDGET -> Icons.Filled.PieChart
+    Onglet.PRIX -> Icons.AutoMirrored.Filled.TrendingUp
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -124,7 +134,15 @@ fun EcranPrincipal(activity: ComponentActivity, vm: ScanViewModel = viewModel())
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(if (detail != null) "Détail du ticket" else "Scan Tickets") },
+                title = {
+                    Text(
+                        when {
+                            detail != null -> "Détail du ticket"
+                            vm.ongletActif == Onglet.TICKETS -> "Scan Tickets"
+                            else -> vm.ongletActif.libelle
+                        }
+                    )
+                },
                 navigationIcon = {
                     if (detail != null) {
                         IconButton(onClick = { vm.selectionner(null) }) {
@@ -134,75 +152,105 @@ fun EcranPrincipal(activity: ComponentActivity, vm: ScanViewModel = viewModel())
                 }
             )
         },
+        bottomBar = {
+            if (detail == null) {
+                NavigationBar {
+                    for (onglet in Onglet.entries) {
+                        NavigationBarItem(
+                            selected = vm.ongletActif == onglet,
+                            onClick = { vm.ongletActif = onglet },
+                            icon = { Icon(iconeOnglet(onglet), contentDescription = null) },
+                            label = { Text(onglet.libelle) }
+                        )
+                    }
+                }
+            }
+        },
         snackbarHost = { SnackbarHost(snackbar) }
     ) { innerPadding ->
-        if (detail != null) {
-            Column(Modifier.padding(innerPadding)) {
-                EcranDetail(detail, vm)
-            }
-            return@Scaffold
-        }
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(innerPadding)
-                .padding(horizontal = 16.dp)
-        ) {
-            if (vm.dossierUri == null) {
-                CarteChoixDossier { choixDossier.launch(null) }
-            } else {
-                Spacer(Modifier.height(12.dp))
-                Button(
-                    onClick = ::lancerScan,
-                    enabled = !vm.enTraitement,
+        Column(modifier = Modifier.padding(innerPadding)) {
+            when {
+                detail != null -> EcranDetail(detail, vm)
+                vm.dossierUri == null -> Column(
                     modifier = Modifier
-                        .fillMaxWidth()
-                        .height(64.dp)
+                        .fillMaxSize()
+                        .padding(horizontal = 16.dp)
                 ) {
-                    if (vm.enTraitement) {
-                        CircularProgressIndicator(
-                            modifier = Modifier.size(24.dp),
-                            color = MaterialTheme.colorScheme.onPrimary
-                        )
-                        Spacer(Modifier.width(12.dp))
-                        Text("Traitement en cours…")
-                    } else {
-                        Icon(Icons.Filled.DocumentScanner, contentDescription = null)
-                        Spacer(Modifier.width(12.dp))
-                        Text("Scanner un ticket", style = MaterialTheme.typography.titleMedium)
-                    }
+                    CarteChoixDossier { choixDossier.launch(null) }
                 }
-                Spacer(Modifier.height(12.dp))
-                CarteStatsMois(vm.scans)
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                    TextButton(
-                        onClick = vm::exporterCsv,
-                        enabled = vm.scans.isNotEmpty()
-                    ) {
-                        Icon(Icons.Filled.TableChart, contentDescription = null)
-                        Spacer(Modifier.width(6.dp))
-                        Text("Exporter CSV")
-                    }
-                    TextButton(onClick = { choixDossier.launch(null) }) {
-                        Icon(Icons.Filled.Folder, contentDescription = null)
-                        Spacer(Modifier.width(6.dp))
-                        Text("Dossier")
-                    }
-                }
-                ListeScans(vm.scans, onClic = vm::selectionner)
+                vm.ongletActif == Onglet.BUDGET -> EcranBudget(vm)
+                vm.ongletActif == Onglet.PRIX -> EcranPrix(vm)
+                else -> EcranTickets(
+                    vm = vm,
+                    onScanner = ::lancerScan,
+                    onChangerDossier = { choixDossier.launch(null) }
+                )
             }
         }
     }
 }
 
 @Composable
+private fun EcranTickets(
+    vm: ScanViewModel,
+    onScanner: () -> Unit,
+    onChangerDossier: () -> Unit
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(horizontal = 16.dp)
+    ) {
+        Spacer(Modifier.height(12.dp))
+        Button(
+            onClick = onScanner,
+            enabled = !vm.enTraitement,
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(64.dp)
+        ) {
+            if (vm.enTraitement) {
+                CircularProgressIndicator(
+                    modifier = Modifier.size(24.dp),
+                    color = MaterialTheme.colorScheme.onPrimary
+                )
+                Spacer(Modifier.width(12.dp))
+                Text("Traitement en cours…")
+            } else {
+                Icon(Icons.Filled.DocumentScanner, contentDescription = null)
+                Spacer(Modifier.width(12.dp))
+                Text("Scanner un ticket", style = MaterialTheme.typography.titleMedium)
+            }
+        }
+        Spacer(Modifier.height(12.dp))
+        CarteStatsMois(vm.scans)
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            TextButton(
+                onClick = vm::exporterCsv,
+                enabled = vm.scans.isNotEmpty()
+            ) {
+                Icon(Icons.Filled.TableChart, contentDescription = null)
+                Spacer(Modifier.width(6.dp))
+                Text("Exporter CSV")
+            }
+            TextButton(onClick = onChangerDossier) {
+                Icon(Icons.Filled.Folder, contentDescription = null)
+                Spacer(Modifier.width(6.dp))
+                Text("Dossier")
+            }
+        }
+        ListeScans(vm.scans, onClic = vm::selectionner)
+    }
+}
+
+@Composable
 private fun CarteStatsMois(scans: List<ScanEnregistre>) {
-    val moisCourant = remember { SimpleDateFormat("yyyy-MM", Locale.FRANCE).format(Date()) }
-    val scansDuMois = scans.filter { it.scanneLe.startsWith(moisCourant) }
-    val totalMois = scansDuMois.sumOf { it.total?.toDoubleOrNull() ?: 0.0 }
+    val moisCourant = remember { StatistiquesBudget.moisCourant() }
+    val scansDuMois = StatistiquesBudget.scansDuMois(scans, moisCourant)
+    val totalMois = StatistiquesBudget.totalDuMois(scans, moisCourant)
 
     Card(modifier = Modifier.fillMaxWidth()) {
         Row(
@@ -314,6 +362,12 @@ private fun CarteScan(scan: ScanEnregistre, onClic: () -> Unit) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(
                         text = scan.total?.let { "$it €" } ?: "Total non détecté",
+                        style = MaterialTheme.typography.titleMedium
+                    )
+                    Spacer(Modifier.width(8.dp))
+                    Text(
+                        text = com.scantickets.app.data.Categoriseur
+                            .categoriserTicket(scan.magasin).emoji,
                         style = MaterialTheme.typography.titleMedium
                     )
                     if (scan.aVerifier) {

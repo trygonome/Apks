@@ -115,12 +115,13 @@ object ScanStorage {
         val fichier = dossier.createFile("text/csv", "tickets") ?: return null
 
         val contenu = buildString {
-            append("fichier;scanne_le;date_ticket;magasin;total;confiance;nb_articles\n")
+            append("fichier;scanne_le;date_ticket;magasin;categorie;total;confiance;nb_articles\n")
             for (scan in scans.sortedBy { it.scanneLe }) {
                 append("${scan.nomBase}.jpg;")
                 append("${scan.scanneLe};")
                 append("${champCsv(scan.dateTicket)};")
                 append("${champCsv(scan.magasin)};")
+                append("${Categoriseur.categoriserTicket(scan.magasin).cle};")
                 append("${scan.total ?: ""};")
                 append("${scan.confiance.libelle};")
                 append("${scan.articles.size}\n")
@@ -196,6 +197,7 @@ object ScanStorage {
         put("total", total ?: JSONObject.NULL)
         put("date_ticket", dateTicket ?: JSONObject.NULL)
         put("magasin", magasin ?: JSONObject.NULL)
+        put("categorie", Categoriseur.categoriserTicket(magasin).cle)
         put("confiance_total", confiance.libelle)
         put("somme_articles_ok", coherenceOk ?: JSONObject.NULL)
         put("corrige_manuellement", corrige)

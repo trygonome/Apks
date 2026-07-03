@@ -2,10 +2,11 @@
 
 [![Build APK](https://github.com/trygonome/Apks/actions/workflows/build-apk.yml/badge.svg)](https://github.com/trygonome/Apks/actions/workflows/build-apk.yml)
 
-Application Android de numérisation de tickets de caisse, 100 % hors ligne.
-Porte d'entrée du système local d'analyse de dépenses (pipeline PC avec OCR,
-LLM local et SQLite décrit dans le plan d'action « Scanner de tickets de caisse »),
-et utilisable seule au quotidien.
+Compagnon budget Android, 100 % hors ligne : scanne tes tickets de caisse,
+et l'app fait le reste — catégorisation automatique, tableau de bord mensuel,
+objectif de budget et **suivi de l'évolution des prix** de tes articles
+récurrents. Également porte d'entrée du pipeline PC (OCR + LLM local + SQLite)
+du plan d'action « Scanner de tickets de caisse ».
 
 **📥 Télécharger la dernière version :**
 https://github.com/trygonome/Apks/raw/main/apk/scan-tickets.apk
@@ -27,8 +28,19 @@ https://github.com/trygonome/Apks/raw/main/apk/scan-tickets.apk
 - **Correction manuelle** — chaque ticket s'ouvre en détail : champs éditables,
   articles détectés, texte OCR complet, suppression. Les tickets douteux sont
   marqués « à vérifier ».
-- **Stats du mois** — total dépensé et nombre de tickets en cours de mois.
-- **Export CSV** — `tickets.csv` (séparateur `;`, compatible Excel/LibreOffice FR).
+- **Catégorisation automatique** — enseigne → catégorie (Quick → Restaurant,
+  TotalEnergies → Transport…) et ventilation du caddie article par article
+  (« LESSIVE » chez Carrefour part en Maison). Moteur à dictionnaires FR/BE,
+  déterministe et testé — pas de LLM embarqué : plus précis, instantané,
+  zéro téléchargement.
+- **Onglet Budget** — tableau de bord mensuel navigable : total, comparaison
+  avec le mois précédent, projection de fin de mois, objectif de budget avec
+  barre de progression, répartition par catégorie, top magasins.
+- **Onglet Prix** — évolution du prix de chaque article acheté au moins deux
+  fois : tendance, mini-courbe, historique daté par magasin. Ton inflation
+  personnelle, mesurée sur tes vrais tickets.
+- **Export CSV** — `tickets.csv` (séparateur `;`, compatible Excel/LibreOffice FR),
+  avec catégorie et niveau de confiance.
 
 ## Chaîne complète
 
@@ -54,6 +66,7 @@ le pipeline PC ; les corrections manuelles y sont signalées
   "total": "13.10",
   "date_ticket": "25/06/2026",
   "magasin": "Quick B782 Jenappes",
+  "categorie": "restaurant",
   "confiance_total": "haute",
   "somme_articles_ok": false,
   "corrige_manuellement": false,
@@ -69,7 +82,8 @@ le pipeline PC ; les corrections manuelles y sont signalées
 
 - Kotlin 2.0 · Jetpack Compose · Material 3 · minSdk 26 (Android 8.0), targetSdk 35
 - ML Kit Document Scanner + Text Recognition (embarqué)
-- Analyse déterministe et testée : 17 tests unitaires, dont des tickets réels
+- Moteurs déterministes et testés (analyse OCR, catégorisation, statistiques) :
+  28 tests unitaires, dont des tickets réels
 - Release signée et minifiée (R8, sans obfuscation)
 
 ## Compilation

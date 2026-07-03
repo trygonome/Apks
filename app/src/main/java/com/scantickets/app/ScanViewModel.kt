@@ -22,11 +22,23 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
 import kotlinx.coroutines.withContext
 
+/** Onglets de l'application. */
+enum class Onglet(val libelle: String) {
+    TICKETS("Tickets"),
+    BUDGET("Budget"),
+    PRIX("Prix")
+}
+
 class ScanViewModel(application: Application) : AndroidViewModel(application) {
 
     private val prefs = application.getSharedPreferences("scantickets", Context.MODE_PRIVATE)
 
     var dossierUri by mutableStateOf(chargerDossier())
+        private set
+    var ongletActif by mutableStateOf(Onglet.TICKETS)
+    var budgetMensuel by mutableStateOf(
+        prefs.getFloat("budget_mensuel", 0f).toDouble().takeIf { it > 0 }
+    )
         private set
     var scans by mutableStateOf<List<ScanEnregistre>>(emptyList())
         private set
@@ -54,6 +66,11 @@ class ScanViewModel(application: Application) : AndroidViewModel(application) {
 
     fun selectionner(scan: ScanEnregistre?) {
         scanSelectionne = scan
+    }
+
+    fun definirBudget(montant: Double?) {
+        budgetMensuel = montant?.takeIf { it > 0 }
+        prefs.edit().putFloat("budget_mensuel", (budgetMensuel ?: 0.0).toFloat()).apply()
     }
 
     fun traiterScan(imageUri: Uri) {
