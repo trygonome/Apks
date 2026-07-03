@@ -29,6 +29,17 @@ enum class Onglet(val libelle: String) {
     PRIX("Prix")
 }
 
+/** Fonctions activables de l'application — l'utilisateur compose son app. */
+data class OptionsApp(
+    val ongletBudget: Boolean = true,
+    val ongletPrix: Boolean = true,
+    val montrerTva: Boolean = true,
+    val montrerArticles: Boolean = true,
+    val montrerBadge: Boolean = true,
+    val montrerEmoji: Boolean = true,
+    val importGalerie: Boolean = true
+)
+
 class ScanViewModel(application: Application) : AndroidViewModel(application) {
 
     private val prefs = application.getSharedPreferences("scantickets", Context.MODE_PRIVATE)
@@ -36,10 +47,60 @@ class ScanViewModel(application: Application) : AndroidViewModel(application) {
     var dossierUri by mutableStateOf(chargerDossier())
         private set
     var ongletActif by mutableStateOf(Onglet.TICKETS)
+    var reglagesOuverts by mutableStateOf(false)
     var budgetMensuel by mutableStateOf(
         prefs.getFloat("budget_mensuel", 0f).toDouble().takeIf { it > 0 }
     )
         private set
+
+    // ---- Réglages ----
+
+    var options by mutableStateOf(chargerOptions())
+        private set
+    var themeMode by mutableStateOf(prefs.getString("theme_mode", "systeme") ?: "systeme")
+        private set
+    var accent by mutableStateOf(prefs.getString("accent", "vert") ?: "vert")
+        private set
+    var couleurDynamique by mutableStateOf(prefs.getBoolean("couleur_dynamique", false))
+        private set
+
+    private fun chargerOptions() = OptionsApp(
+        ongletBudget = prefs.getBoolean("opt_budget", true),
+        ongletPrix = prefs.getBoolean("opt_prix", true),
+        montrerTva = prefs.getBoolean("opt_tva", true),
+        montrerArticles = prefs.getBoolean("opt_articles", true),
+        montrerBadge = prefs.getBoolean("opt_badge", true),
+        montrerEmoji = prefs.getBoolean("opt_emoji", true),
+        importGalerie = prefs.getBoolean("opt_galerie", true)
+    )
+
+    fun modifierOptions(nouvelles: OptionsApp) {
+        options = nouvelles
+        prefs.edit()
+            .putBoolean("opt_budget", nouvelles.ongletBudget)
+            .putBoolean("opt_prix", nouvelles.ongletPrix)
+            .putBoolean("opt_tva", nouvelles.montrerTva)
+            .putBoolean("opt_articles", nouvelles.montrerArticles)
+            .putBoolean("opt_badge", nouvelles.montrerBadge)
+            .putBoolean("opt_emoji", nouvelles.montrerEmoji)
+            .putBoolean("opt_galerie", nouvelles.importGalerie)
+            .apply()
+    }
+
+    fun definirThemeMode(mode: String) {
+        themeMode = mode
+        prefs.edit().putString("theme_mode", mode).apply()
+    }
+
+    fun definirAccent(nom: String) {
+        accent = nom
+        prefs.edit().putString("accent", nom).apply()
+    }
+
+    fun definirCouleurDynamique(active: Boolean) {
+        couleurDynamique = active
+        prefs.edit().putBoolean("couleur_dynamique", active).apply()
+    }
     var scans by mutableStateOf<List<ScanEnregistre>>(emptyList())
         private set
     var enTraitement by mutableStateOf(false)

@@ -104,8 +104,11 @@ fun EcranBudget(vm: ScanViewModel) {
                     )
                 }
                 if (projection != null && total > 0) {
+                    val jourActuel = java.util.Calendar.getInstance()
+                        .get(java.util.Calendar.DAY_OF_MONTH)
                     Text(
-                        "Projection fin de mois au rythme actuel : ${euros(projection)}",
+                        "Soit ${euros(total / jourActuel)} par jour — " +
+                            "projection fin de mois : ${euros(projection)}",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.outline
                     )

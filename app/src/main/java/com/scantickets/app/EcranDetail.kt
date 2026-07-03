@@ -116,7 +116,7 @@ fun EcranDetail(scan: ScanEnregistre, vm: ScanViewModel) {
             }
         }
 
-        if (scan.articles.isNotEmpty()) {
+        if (vm.options.montrerArticles && scan.articles.isNotEmpty()) {
             Spacer(Modifier.height(16.dp))
             Text(
                 "Articles détectés (${scan.articles.size})",
@@ -151,7 +151,7 @@ fun EcranDetail(scan: ScanEnregistre, vm: ScanViewModel) {
             }
         }
 
-        if (scan.tva.isNotEmpty()) {
+        if (vm.options.montrerTva && scan.tva.isNotEmpty()) {
             Spacer(Modifier.height(12.dp))
             Text("TVA détectée", style = MaterialTheme.typography.titleSmall)
             for (ligne in scan.tva) {

@@ -11,24 +11,44 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 
-private val ClairScheme = lightColorScheme(
-    primary = Color(0xFF1B5E20),
-    secondary = Color(0xFF4CAF50)
+/** Une couleur d'accent choisissable dans les réglages. */
+data class AccentApp(
+    val nom: String,
+    val libelle: String,
+    val clair: Color,
+    val sombre: Color
 )
 
-private val SombreScheme = darkColorScheme(
-    primary = Color(0xFF81C784),
-    secondary = Color(0xFFA5D6A7)
+val accentsDisponibles = listOf(
+    AccentApp("vert", "Vert", Color(0xFF1B5E20), Color(0xFF81C784)),
+    AccentApp("bleu", "Bleu", Color(0xFF0D47A1), Color(0xFF90CAF9)),
+    AccentApp("violet", "Violet", Color(0xFF5E35B1), Color(0xFFB39DDB)),
+    AccentApp("solaire", "Solaire", Color(0xFF9A5B00), Color(0xFFFFC97A))
 )
 
 @Composable
-fun ScanTicketsTheme(content: @Composable () -> Unit) {
-    val sombre = isSystemInDarkTheme()
-    val colorScheme = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+fun ScanTicketsTheme(
+    themeMode: String = "systeme",
+    accent: String = "vert",
+    dynamique: Boolean = false,
+    content: @Composable () -> Unit
+) {
+    val sombre = when (themeMode) {
+        "clair" -> false
+        "sombre" -> true
+        else -> isSystemInDarkTheme()
+    }
+    val colorScheme = if (dynamique && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
         val context = LocalContext.current
         if (sombre) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
     } else {
-        if (sombre) SombreScheme else ClairScheme
+        val choix = accentsDisponibles.firstOrNull { it.nom == accent }
+            ?: accentsDisponibles.first()
+        if (sombre) {
+            darkColorScheme(primary = choix.sombre, secondary = choix.sombre)
+        } else {
+            lightColorScheme(primary = choix.clair, secondary = choix.clair)
+        }
     }
     MaterialTheme(colorScheme = colorScheme, content = content)
 }

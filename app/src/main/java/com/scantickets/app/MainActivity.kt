@@ -29,6 +29,8 @@ import androidx.compose.material.icons.automirrored.filled.TrendingUp
 import androidx.compose.material.icons.filled.DocumentScanner
 import androidx.compose.material.icons.filled.Folder
 import androidx.compose.material.icons.filled.PieChart
+import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.TableChart
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
@@ -39,6 +41,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
@@ -47,7 +50,10 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -69,8 +75,13 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
-            ScanTicketsTheme {
-                EcranPrincipal(activity = this)
+            val vm: ScanViewModel = viewModel()
+            ScanTicketsTheme(
+                themeMode = vm.themeMode,
+                accent = vm.accent,
+                dynamique = vm.couleurDynamique
+            ) {
+                EcranPrincipal(activity = this, vm = vm)
             }
         }
     }
@@ -107,7 +118,7 @@ fun EcranPrincipal(activity: ComponentActivity, vm: ScanViewModel = viewModel())
 
     fun lancerScan() {
         val options = GmsDocumentScannerOptions.Builder()
-            .setGalleryImportAllowed(true)
+            .setGalleryImportAllowed(vm.options.importGalerie)
             .setPageLimit(1)
             .setResultFormats(GmsDocumentScannerOptions.RESULT_FORMAT_JPEG)
             .setScannerMode(GmsDocumentScannerOptions.SCANNER_MODE_FULL)
@@ -130,6 +141,12 @@ fun EcranPrincipal(activity: ComponentActivity, vm: ScanViewModel = viewModel())
     }
 
     val detail = vm.scanSelectionne
+    val ongletsVisibles = buildList {
+        add(Onglet.TICKETS)
+        if (vm.options.ongletBudget) add(Onglet.BUDGET)
+        if (vm.options.ongletPrix) add(Onglet.PRIX)
+    }
+    val onglet = if (vm.ongletActif in ongletsVisibles) vm.ongletActif else Onglet.TICKETS
 
     Scaffold(
         topBar = {
@@ -138,29 +155,40 @@ fun EcranPrincipal(activity: ComponentActivity, vm: ScanViewModel = viewModel())
                     Text(
                         when {
                             detail != null -> "Détail du ticket"
-                            vm.ongletActif == Onglet.TICKETS -> "Scan Tickets"
-                            else -> vm.ongletActif.libelle
+                            vm.reglagesOuverts -> "Réglages"
+                            onglet == Onglet.TICKETS -> "Scan Tickets"
+                            else -> onglet.libelle
                         }
                     )
                 },
                 navigationIcon = {
-                    if (detail != null) {
-                        IconButton(onClick = { vm.selectionner(null) }) {
+                    if (detail != null || vm.reglagesOuverts) {
+                        IconButton(onClick = {
+                            if (detail != null) vm.selectionner(null)
+                            else vm.reglagesOuverts = false
+                        }) {
                             Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Retour")
+                        }
+                    }
+                },
+                actions = {
+                    if (detail == null && !vm.reglagesOuverts) {
+                        IconButton(onClick = { vm.reglagesOuverts = true }) {
+                            Icon(Icons.Filled.Settings, contentDescription = "Réglages")
                         }
                     }
                 }
             )
         },
         bottomBar = {
-            if (detail == null) {
+            if (detail == null && !vm.reglagesOuverts && ongletsVisibles.size > 1) {
                 NavigationBar {
-                    for (onglet in Onglet.entries) {
+                    for (o in ongletsVisibles) {
                         NavigationBarItem(
-                            selected = vm.ongletActif == onglet,
-                            onClick = { vm.ongletActif = onglet },
-                            icon = { Icon(iconeOnglet(onglet), contentDescription = null) },
-                            label = { Text(onglet.libelle) }
+                            selected = onglet == o,
+                            onClick = { vm.ongletActif = o },
+                            icon = { Icon(iconeOnglet(o), contentDescription = null) },
+                            label = { Text(o.libelle) }
                         )
                     }
                 }
@@ -171,6 +199,10 @@ fun EcranPrincipal(activity: ComponentActivity, vm: ScanViewModel = viewModel())
         Column(modifier = Modifier.padding(innerPadding)) {
             when {
                 detail != null -> EcranDetail(detail, vm)
+                vm.reglagesOuverts -> EcranReglages(
+                    vm = vm,
+                    onChangerDossier = { choixDossier.launch(null) }
+                )
                 vm.dossierUri == null -> Column(
                     modifier = Modifier
                         .fillMaxSize()
@@ -178,13 +210,9 @@ fun EcranPrincipal(activity: ComponentActivity, vm: ScanViewModel = viewModel())
                 ) {
                     CarteChoixDossier { choixDossier.launch(null) }
                 }
-                vm.ongletActif == Onglet.BUDGET -> EcranBudget(vm)
-                vm.ongletActif == Onglet.PRIX -> EcranPrix(vm)
-                else -> EcranTickets(
-                    vm = vm,
-                    onScanner = ::lancerScan,
-                    onChangerDossier = { choixDossier.launch(null) }
-                )
+                onglet == Onglet.BUDGET -> EcranBudget(vm)
+                onglet == Onglet.PRIX -> EcranPrix(vm)
+                else -> EcranTickets(vm = vm, onScanner = ::lancerScan)
             }
         }
     }
@@ -193,9 +221,22 @@ fun EcranPrincipal(activity: ComponentActivity, vm: ScanViewModel = viewModel())
 @Composable
 private fun EcranTickets(
     vm: ScanViewModel,
-    onScanner: () -> Unit,
-    onChangerDossier: () -> Unit
+    onScanner: () -> Unit
 ) {
+    var recherche by remember { mutableStateOf("") }
+    val scansFiltres = remember(vm.scans, recherche) {
+        if (recherche.isBlank()) vm.scans
+        else {
+            val requete = recherche.trim().lowercase(Locale.FRANCE)
+            vm.scans.filter { scan ->
+                (scan.magasin?.lowercase(Locale.FRANCE)?.contains(requete) == true) ||
+                    (scan.dateTicket?.contains(requete) == true) ||
+                    (scan.total?.contains(requete) == true) ||
+                    scan.texteOcr.lowercase(Locale.FRANCE).contains(requete)
+            }
+        }
+    }
+
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -226,7 +267,8 @@ private fun EcranTickets(
         CarteStatsMois(vm.scans)
         Row(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
         ) {
             TextButton(
                 onClick = vm::exporterCsv,
@@ -236,13 +278,18 @@ private fun EcranTickets(
                 Spacer(Modifier.width(6.dp))
                 Text("Exporter CSV")
             }
-            TextButton(onClick = onChangerDossier) {
-                Icon(Icons.Filled.Folder, contentDescription = null)
-                Spacer(Modifier.width(6.dp))
-                Text("Dossier")
-            }
         }
-        ListeScans(vm.scans, onClic = vm::selectionner)
+        if (vm.scans.size > 3) {
+            OutlinedTextField(
+                value = recherche,
+                onValueChange = { recherche = it },
+                placeholder = { Text("Rechercher (magasin, article, date…)") },
+                leadingIcon = { Icon(Icons.Filled.Search, contentDescription = null) },
+                singleLine = true,
+                modifier = Modifier.fillMaxWidth()
+            )
+        }
+        ListeScans(scansFiltres, options = vm.options, onClic = vm::selectionner)
     }
 }
 
@@ -305,6 +352,7 @@ private fun CarteChoixDossier(onChoisir: () -> Unit) {
 @Composable
 private fun ListeScans(
     scans: List<ScanEnregistre>,
+    options: OptionsApp,
     onClic: (ScanEnregistre) -> Unit
 ) {
     if (scans.isEmpty()) {
@@ -333,13 +381,13 @@ private fun ListeScans(
         contentPadding = PaddingValues(vertical = 12.dp)
     ) {
         items(scans, key = { it.nomBase }) { scan ->
-            CarteScan(scan, onClic = { onClic(scan) })
+            CarteScan(scan, options, onClic = { onClic(scan) })
         }
     }
 }
 
 @Composable
-private fun CarteScan(scan: ScanEnregistre, onClic: () -> Unit) {
+private fun CarteScan(scan: ScanEnregistre, options: OptionsApp, onClic: () -> Unit) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
@@ -364,13 +412,15 @@ private fun CarteScan(scan: ScanEnregistre, onClic: () -> Unit) {
                         text = scan.total?.let { "$it €" } ?: "Total non détecté",
                         style = MaterialTheme.typography.titleMedium
                     )
-                    Spacer(Modifier.width(8.dp))
-                    Text(
-                        text = com.scantickets.app.data.Categoriseur
-                            .categoriserTicket(scan.magasin).emoji,
-                        style = MaterialTheme.typography.titleMedium
-                    )
-                    if (scan.aVerifier) {
+                    if (options.montrerEmoji) {
+                        Spacer(Modifier.width(8.dp))
+                        Text(
+                            text = com.scantickets.app.data.Categoriseur
+                                .categoriserTicket(scan.magasin).emoji,
+                            style = MaterialTheme.typography.titleMedium
+                        )
+                    }
+                    if (options.montrerBadge && scan.aVerifier) {
                         Spacer(Modifier.width(8.dp))
                         Text(
                             text = "à vérifier",
