@@ -166,7 +166,8 @@ object ScanStorage {
                         else json.optBoolean("somme_articles_ok"),
                         confiance = Confiance.depuisLibelle(json.champOuNull("confiance_total")),
                         scanneLe = json.optString("scanne_le", ""),
-                        texteOcr = json.optString("texte_ocr", "")
+                        texteOcr = json.optString("texte_ocr", ""),
+                        corrige = json.optBoolean("corrige_manuellement", false)
                     )
                 }.getOrNull()
             }

@@ -51,7 +51,8 @@ data class ScanEnregistre(
     val coherenceOk: Boolean?,
     val confiance: Confiance,
     val scanneLe: String,
-    val texteOcr: String
+    val texteOcr: String,
+    val corrige: Boolean = false
 ) {
     /** Le scan mérite une vérification humaine. */
     val aVerifier: Boolean

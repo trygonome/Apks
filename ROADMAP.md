@@ -1,67 +1,68 @@
-# Roadmap — Scan Tickets v5.0 « Progression » 🎮
+# Roadmap — Scan Tickets v5 « Le Jardin » 🌱
 
-*Rédigée le 3 juillet 2026, sur la base de la v4.0.*
+*Mise à jour : 4 juillet 2026. Base : v4.0.*
 
-Transformer le suivi de budget en jeu de progression — objectifs, quêtes,
-niveaux, ressources par catégorie — **sans jamais récompenser la dépense**.
+Un **jeu de résistance budgétaire** et un **outil d'éducation à la gestion de
+l'argent** : ton jardin, c'est ta souveraineté — ton argent et tes données,
+cultivés chez toi. Il pousse quand tu es actif ; les Accapareurs avancent
+quand tu restes passif. Comme dans la vraie vie.
+
+L'app incarne son propre message : 100 % locale, zéro pub, zéro traqueur,
+zéro compte.
 
 ## ⚖️ La règle d'or
 
-Une app de budget qui donne des points par euro dépensé pousserait à acheter
-pour « farmer » : l'anti-objectif absolu. Les achats par catégorie génèrent
-bien les ressources (jetons 🛒 🍔 ⛽ 💊…), mais les gains sont **plafonnés par
-ticket et par jour**, et les multiplicateurs viennent du *geste de scanner*,
-de la *qualité des données* (tickets vérifiés) et du *respect du budget*.
-On farme en trackant, pas en dépensant.
+**On ne récompense jamais le fait de dépenser plus.** Les achats génèrent les
+graines (plafonnées/jour), mais le jardin ne prospère que par le geste de
+scanner, la qualité des données et le respect du budget. On cultive en
+trackant, pas en consommant.
 
-## Économie du jeu
+## Les Accapareurs (bestiaire pédagogique)
 
-| Action | Récompense | Garde-fou |
+Des *mécanismes*, pas des marques. Chaque victoire débloque une fiche du
+**Carnet de résistance** (le mécanisme réel + un réflexe concret) :
+
+| Monstre | Se nourrit de | Repoussé par | Fiche pédagogique |
+|---|---|---|---|
+| 🕷️ Le Traqueur | tes données | scanner (lucidité) | pub ciblée & pistage |
+| 🧜 La Sirène des Promos | l'achat impulsif | finir sous budget | dark patterns & fausse urgence |
+| 🐙 L'Abonnite | les abonnements oubliés | vérifier ses tickets | coût cumulé des abonnements |
+| ☁️ Le Grand Nuage | la dépendance aux silos | tenir sa série 🔥 | enclosure numérique |
+
+La passivité réelle a un coût visible (ombres, mauvaises herbes) — jamais
+punitif : un scan et le jardin respire.
+
+## Économie du jardin
+
+| Action réelle | Effet | Garde-fou |
 |---|---|---|
-| Scanner un ticket | +XP, +1 jeton de la catégorie | max 5 tickets/jour comptés |
-| Vérifier un ticket douteux | +XP bonus | 1 bonus par ticket |
-| Série de jours avec scan 🔥 | multiplicateur d'XP (×1,1 → ×2) | 1 scan/jour suffit |
-| Mois fini sous l'objectif | gros bonus + jeton d'or 🏅 | objectif requis |
-| Nouvelle enseigne scannée | carte de collection | illimité |
+| Scanner un ticket | +10 XP, +1 graine de la catégorie | max 5/jour comptés |
+| Vérifier un ticket douteux | +5 XP bonus | 1 par ticket |
+| Série de jours 🔥 | XP ×1,1 → ×2,0 | 1 scan/jour suffit |
+| Mois fini sous l'objectif | graine d'or 🏅 + 100 XP | objectif requis |
+| Nouvelle enseigne | spécimen d'herbier | illimité |
 
-Les jetons se dépensent dans une **boutique 100 % cosmétique** (couleurs
-d'accent exclusives, titres). Aucune fonction utile n'est verrouillée par le
-jeu.
+Les graines plantent des décors 100 % cosmétiques. Aucune fonction utile
+verrouillée par le jeu.
 
-## Quêtes (3 par semaine, générées localement)
+## Jalons
 
-Exemples : scanner 5 tickets · vérifier 3 tickets douteux · rester sous 30 €
-en Restaurant · tenir une série de 4 jours · découvrir 2 enseignes.
-
-Succès permanents : premier ticket, 100 tickets, 10 enseignes, 50 TVA
-détectées, 3 mois sous budget, les 11 catégories utilisées…
-
-## Architecture
-
-- **L'état du jeu se recalcule depuis les fichiers de scans** (source de
-  vérité) : rien à migrer, rien à corrompre ;
-- Moteur en pur Kotlin testé (`MoteurProgression`) — chaque règle = un test ;
-- **Activable** dans les Réglages : éteint, l'app redevient la v4.0 ;
-- 100 % local : pas de classement en ligne, pas de compte.
-
-## Jalons (~1 session chacun)
-
-1. **Moteur de progression** — XP, niveaux, jetons, séries, recalcul depuis
-   l'historique. *Fini quand chaque règle a son test, garde-fous compris.*
-2. **Quêtes, succès, collection** — génération hebdo déterministe. *Fini
-   quand les quêtes se génèrent/valident/renouvellent en tests.*
-3. **Onglet Progression** — barre d'XP, quêtes, succès, collection,
-   célébrations sobres. *Fini quand scan → récompense est visible de bout en
-   bout et que l'interrupteur éteint tout.*
-4. **Boutique cosmétique + release v5.0** — équilibrage, polish, APK signé.
-   *Fini quand un mois de jeu simulé ne casse rien.*
+1. ✅ **Moteur de progression** (`progression/MoteurProgression.kt`) — XP,
+   niveaux et titres de jardinier, graines plafonnées, séries et
+   multiplicateur, graines d'or, herbier. Recalculé depuis l'historique.
+   13 tests.
+2. ⬜ **Missions, Carnet de résistance, herbier** — 3 missions hebdo générées
+   localement, ~20 fiches pédagogiques débloquées par les victoires.
+3. ⬜ **La scène du Jardin (2D)** — Canvas Compose 60 fps, art vectoriel
+   procédural : ciel selon l'état du mois, plantes, mascotte, pluie de pièces
+   au scan. (1-2 sessions, itération de game feel avec l'utilisateur.)
+4. ⬜ **Les Accapareurs à l'écran** — ombres selon la passivité, animations de
+   recul, liaison monstres ↔ fiches.
+5. ⬜ **Plantations, équilibrage, release v5.0** — catalogue de décors,
+   équilibrage, APK signé.
 
 ## Hors périmètre (assumé)
 
-Classements en ligne (contraire au 100 % local), récompenses fonctionnelles,
-notifications de rappel (décision au jalon 3).
-
----
-
-Version détaillée et illustrée : voir le document de roadmap partagé en
-session.
+Marques réelles nommées, classements en ligne, comptes, récompenses
+fonctionnelles. Interrupteur « Le Jardin » dans les Réglages : éteint, l'app
+redevient l'outil pur.
