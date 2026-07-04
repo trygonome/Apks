@@ -25,6 +25,17 @@
   opinioné, bons défauts, réglages minimes.
 - Nom de code temporaire : **Budgeskets** — naming définitif au PRD.
 
+## Contraintes techniques pour l'architecture (V1)
+
+- **Thermiques pâlis** : prévoir un pré-traitement de rehaussement de
+  contraste avant OCR, et mesurer le taux de réussite sur la pile réelle ;
+  le repli en saisie manuelle doit être rapide et sans culpabilisation.
+- **Mode rafale** : ~50 tickets à la suite → la caméra doit enchaîner sans
+  retour à l'écran d'accueil ; l'analyse peut être différée (file de
+  traitement) pour ne pas bloquer la capture.
+- Dimensionnement : une pile de 50 tickets = une session d'environ 15-20
+  minutes de capture ; c'est le scénario de stress de la V1.
+
 ## Contexte hérité (voir docs/HERITAGE.md pour le détail)
 
 Moteurs Kotlin testés réutilisables (OCR géométrique, analyseur à scores,
