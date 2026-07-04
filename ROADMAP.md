@@ -54,12 +54,10 @@ verrouillée par le jeu.
 2. ✅ **Carnet de résistance** — 12 fiches pédagogiques à paliers permanents
    (sans échéance ni reset : les quêtes hebdomadaires ont été abandonnées —
    le FOMO est l'arme de la Sirène, pas la nôtre).
-   localement, ~20 fiches pédagogiques débloquées par les victoires.
 3. ✅ **La scène du Jardin (2D)** — Canvas animé : ciel selon l'état du mois,
    plantes par catégorie à 3 stades, tirelire-cochon mascotte, ombres et
-   toile du Traqueur en cas de passivité. Livré en v5.0-beta1.
-   procédural : ciel selon l'état du mois, plantes, mascotte, pluie de pièces
-   au scan. (1-2 sessions, itération de game feel avec l'utilisateur.)
+   toile du Traqueur en cas de passivité. Livré en v5.0-beta1 ; le game feel
+   s'itère avec les retours de l'utilisateur.
 4. ⬜ **Les Accapareurs à l'écran** — ombres selon la passivité, animations de
    recul, liaison monstres ↔ fiches.
 5. ⬜ **Plantations, équilibrage, release v5.0** — catalogue de décors,
