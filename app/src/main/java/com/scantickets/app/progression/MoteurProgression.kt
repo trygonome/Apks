@@ -23,7 +23,9 @@ data class EtatJardin(
     val multiplicateurActuel: Double,
     val herbier: List<String>,
     val moisSousBudget: Int,
-    val joursDepuisDernierScan: Long?
+    val joursDepuisDernierScan: Long?,
+    val ticketsScannes: Int,
+    val ticketsVerifies: Int
 )
 
 /**
@@ -139,7 +141,9 @@ object MoteurProgression {
             multiplicateurActuel = if (serieEnCours > 0) multiplicateurPour(serieEnCours) else 1.0,
             herbier = herbier,
             moisSousBudget = grainesOr,
-            joursDepuisDernierScan = joursDepuis
+            joursDepuisDernierScan = joursDepuis,
+            ticketsScannes = ordonnes.size,
+            ticketsVerifies = ordonnes.count { it.corrige }
         )
     }
 

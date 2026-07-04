@@ -51,9 +51,13 @@ verrouillée par le jeu.
    niveaux et titres de jardinier, graines plafonnées, séries et
    multiplicateur, graines d'or, herbier. Recalculé depuis l'historique.
    13 tests.
-2. ⬜ **Missions, Carnet de résistance, herbier** — 3 missions hebdo générées
+2. ✅ **Carnet de résistance** — 12 fiches pédagogiques à paliers permanents
+   (sans échéance ni reset : les quêtes hebdomadaires ont été abandonnées —
+   le FOMO est l'arme de la Sirène, pas la nôtre).
    localement, ~20 fiches pédagogiques débloquées par les victoires.
-3. ⬜ **La scène du Jardin (2D)** — Canvas Compose 60 fps, art vectoriel
+3. ✅ **La scène du Jardin (2D)** — Canvas animé : ciel selon l'état du mois,
+   plantes par catégorie à 3 stades, tirelire-cochon mascotte, ombres et
+   toile du Traqueur en cas de passivité. Livré en v5.0-beta1.
    procédural : ciel selon l'état du mois, plantes, mascotte, pluie de pièces
    au scan. (1-2 sessions, itération de game feel avec l'utilisateur.)
 4. ⬜ **Les Accapareurs à l'écran** — ombres selon la passivité, animations de

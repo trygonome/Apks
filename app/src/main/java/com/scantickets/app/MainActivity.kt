@@ -28,6 +28,7 @@ import androidx.compose.material.icons.automirrored.filled.ReceiptLong
 import androidx.compose.material.icons.automirrored.filled.TrendingUp
 import androidx.compose.material.icons.filled.DocumentScanner
 import androidx.compose.material.icons.filled.Folder
+import androidx.compose.material.icons.filled.LocalFlorist
 import androidx.compose.material.icons.filled.PieChart
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Settings
@@ -89,6 +90,7 @@ class MainActivity : ComponentActivity() {
 
 private fun iconeOnglet(onglet: Onglet): ImageVector = when (onglet) {
     Onglet.TICKETS -> Icons.AutoMirrored.Filled.ReceiptLong
+    Onglet.JARDIN -> Icons.Filled.LocalFlorist
     Onglet.BUDGET -> Icons.Filled.PieChart
     Onglet.PRIX -> Icons.AutoMirrored.Filled.TrendingUp
 }
@@ -143,6 +145,7 @@ fun EcranPrincipal(activity: ComponentActivity, vm: ScanViewModel = viewModel())
     val detail = vm.scanSelectionne
     val ongletsVisibles = buildList {
         add(Onglet.TICKETS)
+        if (vm.options.ongletJardin) add(Onglet.JARDIN)
         if (vm.options.ongletBudget) add(Onglet.BUDGET)
         if (vm.options.ongletPrix) add(Onglet.PRIX)
     }
@@ -210,6 +213,7 @@ fun EcranPrincipal(activity: ComponentActivity, vm: ScanViewModel = viewModel())
                 ) {
                     CarteChoixDossier { choixDossier.launch(null) }
                 }
+                onglet == Onglet.JARDIN -> EcranJardin(vm)
                 onglet == Onglet.BUDGET -> EcranBudget(vm)
                 onglet == Onglet.PRIX -> EcranPrix(vm)
                 else -> EcranTickets(vm = vm, onScanner = ::lancerScan)

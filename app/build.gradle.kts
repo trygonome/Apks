@@ -12,8 +12,8 @@ android {
         applicationId = "com.scantickets.app"
         minSdk = 26
         targetSdk = 35
-        versionCode = 8
-        versionName = "4.0"
+        versionCode = 9
+        versionName = "5.0-beta1"
     }
 
     // La clé de signature n'est PAS versionnée (dépôt public). Si

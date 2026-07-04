@@ -102,6 +102,8 @@ fun EcranReglages(vm: ScanViewModel, onChangerDossier: () -> Unit) {
         // ---------- Fonctions ----------
         TitreSection("Fonctions")
         val options = vm.options
+        LigneInterrupteur("Le Jardin 🌱", "Jeu de progression et Carnet de résistance",
+            options.ongletJardin) { vm.modifierOptions(options.copy(ongletJardin = it)) }
         LigneInterrupteur("Onglet Budget", "Tableau de bord mensuel et objectif",
             options.ongletBudget) { vm.modifierOptions(options.copy(ongletBudget = it)) }
         LigneInterrupteur("Onglet Prix", "Évolution du prix de tes articles récurrents",

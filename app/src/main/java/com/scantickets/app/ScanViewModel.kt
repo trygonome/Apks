@@ -25,12 +25,14 @@ import kotlinx.coroutines.withContext
 /** Onglets de l'application. */
 enum class Onglet(val libelle: String) {
     TICKETS("Tickets"),
+    JARDIN("Jardin"),
     BUDGET("Budget"),
     PRIX("Prix")
 }
 
 /** Fonctions activables de l'application — l'utilisateur compose son app. */
 data class OptionsApp(
+    val ongletJardin: Boolean = true,
     val ongletBudget: Boolean = true,
     val ongletPrix: Boolean = true,
     val montrerTva: Boolean = true,
@@ -65,6 +67,7 @@ class ScanViewModel(application: Application) : AndroidViewModel(application) {
         private set
 
     private fun chargerOptions() = OptionsApp(
+        ongletJardin = prefs.getBoolean("opt_jardin", true),
         ongletBudget = prefs.getBoolean("opt_budget", true),
         ongletPrix = prefs.getBoolean("opt_prix", true),
         montrerTva = prefs.getBoolean("opt_tva", true),
@@ -77,6 +80,7 @@ class ScanViewModel(application: Application) : AndroidViewModel(application) {
     fun modifierOptions(nouvelles: OptionsApp) {
         options = nouvelles
         prefs.edit()
+            .putBoolean("opt_jardin", nouvelles.ongletJardin)
             .putBoolean("opt_budget", nouvelles.ongletBudget)
             .putBoolean("opt_prix", nouvelles.ongletPrix)
             .putBoolean("opt_tva", nouvelles.montrerTva)
