@@ -78,3 +78,6 @@ lint-results_files/
 
 # Android Profiling
 *.hprof
+
+# Clé de signature locale (jamais versionnée)
+signing/
